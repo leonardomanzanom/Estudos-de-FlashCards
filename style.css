@@ -1,20 +1,18 @@
-* {
+- {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-/* Ajuste para cel*/
+
+
 @media screen and (max-width: 768px) {
-  body, html{
+  body, html {
     width: 100%;
     overflow-x: hidden;
     margin: 0;
     padding: 0;
   }
- 
-@media screen and (max-width: 768px) {
-  
 
   .shortcuts-box, .keyboard-shortcuts, .teclas-atalho {
     display: none !important;
@@ -23,14 +21,26 @@
 
   footer, .footer-buttons, .bottom-nav {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
     margin-bottom: 20px;
   }
 
  
+  .footer-buttons button, 
+  .bottom-nav button, 
+  footer button,
+  .btn-anterior, .btn-proximo {
+    width: 85% !important;
+    max-width: 300px !important;
+    display: block !important;
+    margin: 0 auto !important;
+    padding: 14px 0 !important;
+    font-size: 16px !important;
+  }
+
   .floating-buttons, .action-buttons-container {
     position: relative !important;
     bottom: auto !important;
@@ -41,6 +51,7 @@
     margin-top: 15px;
     flex-wrap: wrap;
   }
+}
 
  
   button.errei, button.acerte, .btn-errei, .btn-acerte {
