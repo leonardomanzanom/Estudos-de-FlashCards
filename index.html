@@ -10,15 +10,40 @@
 
   <h1>Plataforma de Flashcards</h1>
 
+  <h3 class="Aviso"><strong>⚠️ ATENÇÃO: NÃO LIMPE O HISTÓRICO ANTES DE REALIZAR O BACKUP!!! ⚠️</strong></h3>
+  
+  <div class="progress-container">
+    <div class="progress-bar-wrapper">
+      <div id="barCorrect" class="progress-segment correct-segment" style="width: 0%;"></div>
+      <div id="barWrong" class="progress-segment wrong-segment" style="width: 0%;"></div>
+    </div>
+    <div class="progress-labels">
+      <span id="percentCorrect">0% Acertos</span>
+      <span id="percentWrong">0% Erros</span>
+    </div>
+  </div>
+
+  <div class="filter-controls">
+    <button class="btn-secondary" onclick="setFilterMode('all')">Ver Todos</button>
+    <button class="btn-danger-outline" onclick="setFilterMode('wrong_only')">🎯 Focar nos Erros</button>
+  </div>
+
+  <div id="studyModeBadge" class="mode-badge" style="display: none;">
+    Modo: Revisando apenas erros
+  </div>
+
+  <div class="score-board">
+    <span class="score-tag wrong-tag">Erros: <strong id="wrongCount">0</strong></span>
+    <span class="score-tag correct-tag">Acertos: <strong id="correctCount">0</strong></span>
+  </div>
 
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('studyTab', this)">Estudar</button>
-    <button class="tab-btn" onclick="switchTab('manageTab', this)">Gerenciar / Editar</button>
+    <button class="tab-btn" onclick="switchTab('manageTab', this)">Gerenciar Cartões</button>
   </div>
 
   <div class="main-container">
 
-  
     <div id="studyTab" class="tab-content active">
       <div class="flashcard-container" onclick="flipCard()">
         <div class="card" id="card">
@@ -33,26 +58,30 @@
         </div>
       </div>
 
-    
       <div class="keyboard-hints">
         <span><kbd>⎵</kbd> Embaralhar</span>
-        <span><kbd>↑</kbd> <kbd>↓</kbd>Virar Card</span>
+        <span><kbd>↑</kbd> <kbd>↓</kbd> Virar Card</span>
         <span><kbd>←</kbd> Anterior</span>
         <span><kbd>→</kbd> Próximo</span>
+        <span><kbd>2</kbd> Acertei</span>
+        <span><kbd>1</kbd> Errei</span>
       </div>
 
-  
+      <div class="feedback-controls">
+        <button class="btn-danger" onclick="markCard('wrong')">✕ Errei</button>
+        <button class="btn-success" onclick="markCard('correct')">✓ Acertei</button>
+      </div>
+
       <div class="controls">
         <button onclick="prevCard()">Anterior</button>
         <span class="counter" id="counter">0 / 0</span>
         <button onclick="nextCard()">Próximo</button>
         <button class="btn-secondary" onclick="shuffleCards()">Embaralhar</button>
+        <button class="btn-secondary" onclick="resetProgress()" title="Reiniciar pilhas de acertos/erros">Resetar Pilhas</button>
       </div>
     </div>
 
-   
     <div id="manageTab" class="tab-content">
-   
       <div class="form-card">
         <h2 id="formTitle">Criar Novo Flashcard</h2>
         <form id="cardForm" onsubmit="handleFormSubmit(event)">
@@ -71,252 +100,503 @@
         </form>
       </div>
 
-     
       <h2>Seus Flashcards Cadastrados</h2>
-      <div class="card-list" id="cardList">
-      
-      </div>
+      <div class="card-list" id="cardList"></div>
     </div>
 
   </div>
 
-  <script>
-    const defaultFlashcards = [
-      {
-        id: 1,
-        pergunta: "Teste 1",
-        resposta: "Resposta teste 1"
-      },
-      {
-        id: 2,
-        pergunta: "Teste 2",
-        resposta: "Resposta 2"
-      },
-      {
-        id: 3,
-        pergunta: "Teste 3",
-        resposta: "Resposta 3"
-      }
-    ];
+  <div class="backup-controls">
+    <button type="button" class="btn-secondary" onclick="exportBackup()">Salvar FlashCards</button>
+    <button type="button" class="btn-secondary" onclick="document.getElementById('importInput').click()">Importar Backup</button>
+    <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importBackup(event)">
+  </div>
 
-  
-    let flashcards = JSON.parse(localStorage.getItem('flashcards_data_v2')) || defaultFlashcards;
-    let currentIndex = 0;
-    let editingCardId = null;
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const mainContainer = document.querySelector('.main-container');
+  const navTabs = document.querySelector('.nav-tabs');
 
-    // Elementos DOM
-    const cardElement = document.getElementById('card');
-    const questionElement = document.getElementById('question');
-    const answerElement = document.getElementById('answer');
-    const counterElement = document.getElementById('counter');
-
-    const formTitle = document.getElementById('formTitle');
-    const questionInput = document.getElementById('questionInput');
-    const answerInput = document.getElementById('answerInput');
-    const btnSubmitForm = document.getElementById('btnSubmitForm');
-    const btnCancelEdit = document.getElementById('btnCancelEdit');
-    const cardListElement = document.getElementById('cardList');
-
-  
-    function saveToStorage() {
-      localStorage.setItem('flashcards_data_v2', JSON.stringify(flashcards));
+  if (mainContainer && !document.querySelector('.deck-selector-container')) {
+    const deckContainer = document.createElement('div');
+    deckContainer.className = 'deck-selector-container';
+    deckContainer.innerHTML = `
+      <label for="deckSelect">Sessão:</label>
+      <div class="deck-controls">
+        <select id="deckSelect" onchange="changeDeck(this.value)"></select>
+        <button class="btn-success" onclick="createNewDeck()">+ Nova</button>
+        <button class="btn-danger" onclick="deleteCurrentDeck()">Excluir</button>
+      </div>
+    `;
+    if (navTabs) {
+      navTabs.parentNode.insertBefore(deckContainer, navTabs);
+    } else {
+      mainContainer.parentNode.insertBefore(deckContainer, mainContainer);
     }
+  }
 
-    // Alternar entre as Abas
-    function switchTab(tabId, btnElement) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  renderDeckOptions();
+  loadCard();
+  renderManageList();
+});
 
-      document.getElementById(tabId).classList.add('active');
-      btnElement.classList.add('active');
+const defaultFlashcards = [
+  { id: 1, pergunta: "Exemplo 1", resposta: "Resposta 1", status: "pending" },
+  { id: 2, pergunta: "Exemplo 2", resposta: "Resposta 2", status: "pending" }
+];
 
-      if (tabId === 'studyTab') {
-        loadCard();
-      } else {
-        renderManageList();
-      }
-    }
+let decks = {};
+try {
+  decks = JSON.parse(localStorage.getItem('flashcards_decks_v5')) || { "Inglês": defaultFlashcards };
+} catch (e) {
+  decks = { "Inglês": defaultFlashcards };
+}
 
-   
-    function loadCard() {
-      cardElement.classList.remove('flipped');
+let currentDeckKey = localStorage.getItem('flashcards_current_deck_v5') || Object.keys(decks)[0] || "Inglês";
 
-      if (flashcards.length === 0) {
-        setTimeout(() => {
-          questionElement.innerHTML = '<div class="empty-state">Sem cartões.<br>Adicione na aba Gerenciar!</div>';
-          answerElement.innerHTML = '<div class="empty-state">Sem cartões.<br>Adicione na aba Gerenciar!</div>';
-          counterElement.textContent = '0 / 0';
-        }, 150);
-        return;
-      }
+if (!decks[currentDeckKey]) {
+  currentDeckKey = Object.keys(decks)[0] || "Inglês";
+}
 
-      if (currentIndex >= flashcards.length) currentIndex = flashcards.length - 1;
-      if (currentIndex < 0) currentIndex = 0;
+let flashcards = decks[currentDeckKey] || [];
+let currentViewList = [];
+let filterMode = 'all';
+let currentIndex = 0;
+let editingCardId = null;
 
-      setTimeout(() => {
-        questionElement.textContent = flashcards[currentIndex].pergunta;
-        answerElement.textContent = flashcards[currentIndex].resposta;
-        counterElement.textContent = `${currentIndex + 1} / ${flashcards.length}`;
-      }, 150);
-    }
+function saveToStorage() {
+  decks[currentDeckKey] = flashcards;
+  localStorage.setItem('flashcards_decks_v5', JSON.stringify(decks));
+  localStorage.setItem('flashcards_current_deck_v5', currentDeckKey);
+}
 
-    function flipCard() {
-      if (flashcards.length > 0) {
-        cardElement.classList.toggle('flipped');
-      }
-    }
-
-    function nextCard() {
-      if (flashcards.length === 0) return;
-      currentIndex = (currentIndex + 1) % flashcards.length;
-      loadCard();
-    }
-
-    function prevCard() {
-      if (flashcards.length === 0) return;
-      currentIndex = (currentIndex - 1 + flashcards.length) % flashcards.length;
-      loadCard();
-    }
-
-    function shuffleCards() {
-      if (flashcards.length <= 1) return;
-      for (let i = flashcards.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
-      }
-      currentIndex = 0;
-      saveToStorage();
-      loadCard();
-    }
-
-    
-    document.addEventListener('keydown', (e) => {
-    
-      if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') {
-        return;
-      }
-
- if (document.getElementById('studyTab').classList.contains('active')) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        flipCard();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        nextCard();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        prevCard();
-      } else if (e.key === ' ' || e.code === 'Space') {
-        e.preventDefault();
-        shuffleCards();
-      }
-    }
+function renderDeckOptions() {
+  const deckSelect = document.getElementById('deckSelect');
+  if (!deckSelect) return;
+  deckSelect.innerHTML = '';
+  Object.keys(decks).forEach(deckName => {
+    const option = document.createElement('option');
+    option.value = deckName;
+    option.textContent = deckName;
+    if (deckName === currentDeckKey) option.selected = true;
+    deckSelect.appendChild(option);
   });
+}
 
-    
-    function handleFormSubmit(event) {
-      event.preventDefault();
+function changeDeck(newDeckName) {
+  if (!decks[newDeckName]) return;
+  currentDeckKey = newDeckName;
+  flashcards = decks[currentDeckKey];
+  
+  flashcards.forEach(card => { if (!card.status) card.status = 'pending'; });
 
-      const pergunta = questionInput.value.trim();
-      const resposta = answerInput.value.trim();
+  filterMode = 'all';
+  currentIndex = 0;
+  saveToStorage();
+  loadCard();
+  renderManageList();
+}
 
-      if (!pergunta || !resposta) return;
+function createNewDeck() {
+  const name = prompt("Digite o nome da nova sessão/tema:");
+  if (!name) return;
+  const trimmedName = name.trim();
+  if (!trimmedName) return;
 
-      if (editingCardId !== null) {
-        const cardIndex = flashcards.findIndex(card => card.id === editingCardId);
-        if (cardIndex !== -1) {
-          flashcards[cardIndex].pergunta = pergunta;
-          flashcards[cardIndex].resposta = resposta;
-        }
-        cancelEdit();
-      } else {
-        const newCard = {
-          id: Date.now(),
-          pergunta,
-          resposta
-        };
-        flashcards.push(newCard);
-      }
+  if (decks[trimmedName]) {
+    alert("Já existe uma sessão com esse nome!");
+    return;
+  }
 
-      saveToStorage(); 
-      resetForm();
-      renderManageList();
+  decks[trimmedName] = [];
+  renderDeckOptions();
+  changeDeck(trimmedName);
+}
+
+function deleteCurrentDeck() {
+  if (Object.keys(decks).length <= 1) {
+    alert("Você precisa ter pelo menos uma sessão ativa.");
+    return;
+  }
+
+  if (confirm(`Excluir a sessão "${currentDeckKey}" e todos os seus cartões?`)) {
+    delete decks[currentDeckKey];
+    currentDeckKey = Object.keys(decks)[0];
+    flashcards = decks[currentDeckKey];
+    currentIndex = 0;
+    saveToStorage();
+    renderDeckOptions();
+    loadCard();
+    renderManageList();
+  }
+}
+
+function updateViewList() {
+  if (filterMode === 'wrong_only') {
+    currentViewList = flashcards.filter(c => c.status === 'wrong');
+  } else {
+    currentViewList = flashcards;
+  }
+}
+
+function loadCard() {
+  const cardElement = document.getElementById('card');
+  const questionElement = document.getElementById('question');
+  const answerElement = document.getElementById('answer');
+  const modeBadge = document.getElementById('studyModeBadge');
+
+  if (cardElement) cardElement.classList.remove('flipped');
+  updateViewList();
+
+  if (modeBadge) {
+    modeBadge.style.display = filterMode === 'wrong_only' ? 'inline-block' : 'none';
+  }
+
+  if (!questionElement || !answerElement) return;
+
+  if (!currentViewList || currentViewList.length === 0) {
+    if (filterMode === 'wrong_only') {
+      questionElement.innerHTML = '<div class="empty-state">🎉 Nenhum erro registrado!<br>Clique em "Ver Todos" para estudar tudo.</div>';
+      answerElement.innerHTML = '<div class="empty-state">Nenhum erro restante.</div>';
+    } else {
+      questionElement.innerHTML = '<div class="empty-state">Sem cartões.<br>Adicione na aba Gerenciar!</div>';
+      answerElement.innerHTML = '<div class="empty-state">Sem cartões.</div>';
     }
+    updateStats();
+    return;
+  }
 
-    function editCard(id) {
-      const cardToEdit = flashcards.find(card => card.id === id);
-      if (!cardToEdit) return;
+  if (currentIndex >= currentViewList.length) currentIndex = currentViewList.length - 1;
+  if (currentIndex < 0) currentIndex = 0;
 
-      editingCardId = cardToEdit.id;
-      questionInput.value = cardToEdit.pergunta;
-      answerInput.value = cardToEdit.resposta;
+  const currentCard = currentViewList[currentIndex];
+  questionElement.textContent = currentCard.pergunta;
+  answerElement.textContent = currentCard.resposta;
+  
+  updateStats();
+}
 
-      formTitle.textContent = "Editar Flashcard";
-      btnSubmitForm.textContent = "Atualizar Flashcard";
-      btnCancelEdit.style.display = "inline-flex";
+function updateStats() {
+  const total = flashcards ? flashcards.length : 0;
+  const correct = flashcards ? flashcards.filter(c => c.status === 'correct').length : 0;
+  const wrong = flashcards ? flashcards.filter(c => c.status === 'wrong').length : 0;
+  
+  const correctCountEl = document.getElementById('correctCount');
+  const wrongCountEl = document.getElementById('wrongCount');
+  const counterElement = document.getElementById('counter');
+  
+  if (correctCountEl) correctCountEl.textContent = correct;
+  if (wrongCountEl) wrongCountEl.textContent = wrong;
+  
+  if (counterElement) {
+    const viewTotal = currentViewList ? currentViewList.length : 0;
+    counterElement.textContent = viewTotal === 0 ? '0 / 0' : `${currentIndex + 1} / ${viewTotal}`;
+  }
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      questionInput.focus();
+  const barCorrect = document.getElementById('barCorrect');
+  const barWrong = document.getElementById('barWrong');
+  const percentCorrectEl = document.getElementById('percentCorrect');
+  const percentWrongEl = document.getElementById('percentWrong');
+
+  if (total > 0) {
+    const percentCorrect = Math.round((correct / total) * 100);
+    const percentWrong = Math.round((wrong / total) * 100);
+
+    if (barCorrect) barCorrect.style.width = `${percentCorrect}%`;
+    if (barWrong) barWrong.style.width = `${percentWrong}%`;
+
+    if (percentCorrectEl) percentCorrectEl.textContent = `${percentCorrect}% Acertos`;
+    if (percentWrongEl) percentWrongEl.textContent = `${percentWrong}% Erros`;
+  } else {
+    if (barCorrect) barCorrect.style.width = '0%';
+    if (barWrong) barWrong.style.width = '0%';
+    if (percentCorrectEl) percentCorrectEl.textContent = '0% Acertos';
+    if (percentWrongEl) percentWrongEl.textContent = '0% Erros';
+  }
+}
+
+function markCard(status) {
+  if (!currentViewList || currentViewList.length === 0) return;
+  
+  const currentCard = currentViewList[currentIndex];
+  currentCard.status = status;
+  saveToStorage();
+
+  if (filterMode === 'wrong_only' && status === 'correct') {
+    updateViewList();
+    if (currentViewList.length === 0) {
+      alert("Parabéns! Você corrigiu todos os seus erros nesta sessão!");
+      filterMode = 'all';
+      currentIndex = 0;
+    } else if (currentIndex >= currentViewList.length) {
+      currentIndex = 0;
     }
-
-    function cancelEdit() {
-      editingCardId = null;
-      formTitle.textContent = "Criar Novo Flashcard";
-      btnSubmitForm.textContent = "Salvar Flashcard";
-      btnCancelEdit.style.display = "none";
-      resetForm();
+  } else {
+    if (currentIndex < currentViewList.length - 1) {
+      currentIndex++;
+    } else {
+      checkRoundFinished();
+      currentIndex = 0;
     }
+  }
 
-    function resetForm() {
-      questionInput.value = '';
-      answerInput.value = '';
+  loadCard();
+}
+
+function checkRoundFinished() {
+  const wrongCards = flashcards.filter(c => c.status === 'wrong');
+  const pendingCards = flashcards.filter(c => c.status === 'pending');
+
+  if (pendingCards.length === 0 && wrongCards.length > 0 && filterMode === 'all') {
+    if (confirm(`Você concluiu o teste! Foram encontrados ${wrongCards.length} erro(s).\nDeseja focar apenas nos erros agora?`)) {
+      filterMode = 'wrong_only';
+      currentIndex = 0;
     }
+  }
+}
 
-    function deleteCard(id) {
-      if (confirm("Tem certeza que deseja excluir este flashcard?")) {
-        flashcards = flashcards.filter(card => card.id !== id);
-        saveToStorage(); // Atualiza a gravação permanente no LocalStorage
-        renderManageList();
+function setFilterMode(mode) {
+  filterMode = mode;
+  currentIndex = 0;
+  loadCard();
+}
 
-        if (editingCardId === id) {
-          cancelEdit();
-        }
-      }
+function resetProgress() {
+  if (!flashcards || flashcards.length === 0) return;
+  if (confirm("Deseja reiniciar todas as estatísticas de acertos e erros desta sessão?")) {
+    flashcards.forEach(card => card.status = 'pending');
+    filterMode = 'all';
+    currentIndex = 0;
+    saveToStorage();
+    loadCard();
+    renderManageList();
+  }
+}
+
+function flipCard() {
+  const cardElement = document.getElementById('card');
+  if (cardElement && currentViewList && currentViewList.length > 0) {
+    cardElement.classList.toggle('flipped');
+  }
+}
+
+function nextCard() {
+  if (!currentViewList || currentViewList.length === 0) return;
+  currentIndex = (currentIndex + 1) % currentViewList.length;
+  loadCard();
+}
+
+function prevCard() {
+  if (!currentViewList || currentViewList.length === 0) return;
+  currentIndex = (currentIndex - 1 + currentViewList.length) % currentViewList.length;
+  loadCard();
+}
+
+function shuffleCards() {
+  if (!flashcards || flashcards.length <= 1) return;
+  for (let i = flashcards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+  }
+  currentIndex = 0;
+  saveToStorage();
+  loadCard();
+}
+
+function switchTab(tabId, btnElement) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+  document.getElementById(tabId).classList.add('active');
+  btnElement.classList.add('active');
+
+  if (tabId === 'studyTab') {
+    loadCard();
+  } else {
+    renderManageList();
+  }
+}
+
+function handleFormSubmit(event) {
+  event.preventDefault();
+  const qInput = document.getElementById('questionInput');
+  const aInput = document.getElementById('answerInput');
+
+  const pergunta = qInput.value.trim();
+  const resposta = aInput.value.trim();
+
+  if (!pergunta || !resposta) return;
+
+  if (editingCardId !== null) {
+    const cardIndex = flashcards.findIndex(card => card.id === editingCardId);
+    if (cardIndex !== -1) {
+      flashcards[cardIndex].pergunta = pergunta;
+      flashcards[cardIndex].resposta = resposta;
     }
+    cancelEdit();
+  } else {
+    flashcards.push({
+      id: Date.now(),
+      pergunta,
+      resposta,
+      status: 'pending'
+    });
+  }
 
-    
-    function renderManageList() {
-      cardListElement.innerHTML = '';
+  saveToStorage(); 
+  qInput.value = '';
+  aInput.value = '';
+  renderManageList();
+}
 
-      if (flashcards.length === 0) {
-        cardListElement.innerHTML = '<p style="color: #64748b; text-align: center;">Nenhum flashcard cadastrado.</p>';
+function editCard(id) {
+  const cardToEdit = flashcards.find(card => card.id === id);
+  if (!cardToEdit) return;
+
+  editingCardId = cardToEdit.id;
+  document.getElementById('questionInput').value = cardToEdit.pergunta;
+  document.getElementById('answerInput').value = cardToEdit.resposta;
+
+  document.getElementById('formTitle').textContent = "Editar Flashcard";
+  document.getElementById('btnSubmitForm').textContent = "Atualizar Flashcard";
+  document.getElementById('btnCancelEdit').style.display = "inline-flex";
+}
+
+function cancelEdit() {
+  editingCardId = null;
+  document.getElementById('formTitle').textContent = "Criar Novo Flashcard";
+  document.getElementById('btnSubmitForm').textContent = "Salvar Flashcard";
+  document.getElementById('btnCancelEdit').style.display = "none";
+  document.getElementById('questionInput').value = '';
+  document.getElementById('answerInput').value = '';
+}
+
+function deleteCard(id) {
+  if (confirm("Excluir este cartão?")) {
+    flashcards = flashcards.filter(card => card.id !== id);
+    saveToStorage();
+    renderManageList();
+    if (editingCardId === id) cancelEdit();
+  }
+}
+
+function renderManageList() {
+  const cardListElement = document.getElementById('cardList');
+  if (!cardListElement) return;
+
+  cardListElement.innerHTML = '';
+
+  if (!flashcards || flashcards.length === 0) {
+    cardListElement.innerHTML = '<p style="color: #64748b; text-align: center;">Nenhum cartão cadastrado nesta sessão.</p>';
+    return;
+  }
+
+  flashcards.forEach((card, index) => {
+    let statusBadge = '<span class="status-badge pending">Pendente</span>';
+    if (card.status === 'correct') statusBadge = '<span class="status-badge correct">Acerto</span>';
+    if (card.status === 'wrong') statusBadge = '<span class="status-badge wrong">Erro</span>';
+
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    item.innerHTML = `
+      <div>
+        <span class="list-item-q">${index + 1}. ${escapeHtml(card.pergunta)} ${statusBadge}</span>
+        <span class="list-item-a">${escapeHtml(card.resposta)}</span>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-secondary" onclick="editCard(${card.id})">Editar</button>
+        <button class="btn-danger" onclick="deleteCard(${card.id})">Excluir</button>
+      </div>
+    `;
+    cardListElement.appendChild(item);
+  });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function exportBackup() {
+  if (typeof currentDeckKey !== 'undefined' && typeof flashcards !== 'undefined') {
+    decks[currentDeckKey] = flashcards;
+  }
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(decks, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `backup_flashcards_${new Date().toISOString().slice(0, 10)}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importedDecks = JSON.parse(e.target.result);
+      if (typeof importedDecks !== 'object' || importedDecks === null || Array.isArray(importedDecks)) {
+        alert("O arquivo selecionado não é um backup válido.");
         return;
       }
 
-      flashcards.forEach((card, index) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-          <div class="list-item-text">
-            <span class="list-item-q">${index + 1}. ${escapeHtml(card.pergunta)}</span>
-            <span class="list-item-a">${escapeHtml(card.resposta)}</span>
-          </div>
-          <div class="list-item-actions">
-            <button class="btn-edit" onclick="editCard(${card.id})">Editar</button>
-            <button class="btn-danger" onclick="deleteCard(${card.id})">Excluir</button>
-          </div>
-        `;
-        cardListElement.appendChild(item);
-      });
+      if (confirm("Deseja importar estes flashcards? Seus dados atuais serão substituídos.")) {
+        decks = importedDecks;
+        const firstDeck = Object.keys(decks)[0];
+        if (!firstDeck) return;
+
+        currentDeckKey = firstDeck;
+        flashcards = decks[currentDeckKey] || [];
+        currentIndex = 0;
+
+        saveToStorage();
+        renderDeckOptions();
+        cancelEdit();
+        loadCard();
+        renderManageList();
+        alert("Backup importado com sucesso!");
+      }
+    } catch (err) {
+      alert("Erro ao ler o arquivo JSON.");
     }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
 
-    function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+document.addEventListener('keydown', (e) => {
+  const activeEl = document.activeElement;
+  if (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT') {
+    return;
+  }
+
+  const studyTab = document.getElementById('studyTab');
+  if (studyTab && studyTab.classList.contains('active')) {
+    const key = e.key.toLowerCase();
+
+    if (key === '1' || key === 'a') {
+      e.preventDefault();
+      markCard('wrong');
+    } else if (key === '2' || key === 's') {
+      e.preventDefault();
+      markCard('correct');
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      flipCard();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      nextCard();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      prevCard();
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      shuffleCards();
     }
-
-    // Inicialização
-    loadCard();
-  </script>
-
+  }
+});
+</script>
 </body>
 </html>

@@ -22,7 +22,7 @@ h1 {
   text-align: center;
 }
 
-/* Navegação por Abas */
+
 .nav-tabs {
   display: flex;
   gap: 10px;
@@ -66,7 +66,7 @@ h1 {
   gap: 20px;
 }
 
-/* Flashcard Container (Gira em 3D) */
+
 .flashcard-container {
   perspective: 1000px;
   width: 100%;
@@ -130,7 +130,7 @@ h1 {
   word-break: break-word;
 }
 
-/* Atalhos do Teclado */
+
 .keyboard-hints {
   background-color: #ffffff;
   padding: 12px 20px;
@@ -148,12 +148,12 @@ h1 {
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 4px 12px;
   font-weight: 600;
   color: #334155;
 }
 
-/* Controles de Navegação */
+
 .controls {
   display: flex;
   gap: 12px;
@@ -170,7 +170,7 @@ h1 {
   text-align: center;
 }
 
-/* Botões */
+
 button {
   background-color: #3b82f6;
   color: white;
@@ -193,7 +193,7 @@ button.btn-danger:hover { background-color: #dc2626; }
 button.btn-success { background-color: #10b981; }
 button.btn-success:hover { background-color: #059669; }
 
-/* Aba de Gerenciamento e Formulários */
+
 .form-card {
   background: white;
   width: 100%;
@@ -295,4 +295,201 @@ textarea:focus {
 }
 span{
   font-weight: bold;
+}
+.deck-selector-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 600px;
+  background: #ffffff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.deck-selector-container label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.deck-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.deck-controls select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.9rem;
+  outline: none;
+  background-color: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deck-controls select:focus {
+  border-color: #3b82f6;
+}
+
+.deck-controls button {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+.backup-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.backup-controls button {
+  background-color: #3b82f6;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.backup-controls button:hover {
+  opacity: 1;
+}
+.Aviso{
+  color: red;
+  text-align: left;
+  font-size: small;
+  margin-top: 5px;
+  margin-left: ;
+}
+/* Painel de pontuação e classificação das pilhas */
+.score-board {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  width: 100%;
+}
+
+.score-tag {
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.wrong-tag {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.correct-tag {
+  background-color: #d1fae5;
+  color: #059669;
+  border: 1px solid #6ee7b7;
+}
+
+.feedback-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+
+.feedback-controls button {
+  flex: 1;
+  max-width: 150px;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+/* Badges para a lista do Gerenciar */
+.status-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.status-badge.pending { background-color: #e2e8f0; color: #475569; }
+.status-badge.correct { background-color: #d1fae5; color: #059669; }
+.status-badge.wrong { background-color: #fee2e2; color: #dc2626; }
+.filter-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-danger-outline:hover {
+  background: #fee2e2;
+}
+
+.mode-badge {
+  text-align: center;
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.progress-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 15px auto;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  background-color: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-segment {
+  height: 100%;
+  transition: width 0.3s ease-in-out;
+}
+
+.correct-segment {
+  background-color: #10b981; /* Verde */
+}
+
+.wrong-segment {
+  background-color: #ef4444; /* Vermelho */
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 4px;
 }
