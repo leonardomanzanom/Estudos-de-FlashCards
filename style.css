@@ -6,12 +6,24 @@
 }
 /* Ajuste para cel*/
 @media screen and (max-width: 768px) {
-  body {
-    padding: 10px;
+  body, html{
+    width: 100%;
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
   }
-
- 
+.card-container, .flashcard, main {
+    margin-top: 40px !important; 
+    width: 92% !important;
+    max-width: 92% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box;
+  }
+ button, .btn {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
   .container, header, main, .card-container {
     width: 100% !important;
     max-width: 100% !important;
