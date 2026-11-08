@@ -4,7 +4,27 @@
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+/* Ajuste para cel*/
+@media screen and (max-width: 768px) {
+  body {
+    padding: 10px;
+    overflow-x: hidden;
+  }
 
+ 
+  .container, header, main, .card-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+ 
+  button, .btn {
+    font-size: 14px;
+    padding: 10px 14px;
+    margin: 4px 0;
+  }
+}
 body {
   background-color: #f4f6f9;
   color: #333;
